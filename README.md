@@ -5,12 +5,12 @@ Este projeto tem como objetivo realizar o reconhecimento de posições de xadrez
 ## Estrutura do Repositório
 
 - **src/**: Contém todos os scripts Python responsáveis pelo pipeline do projeto.
-  - `extrator_fen.py`: Extrai FENs a partir de partidas em formato PGN.
-  - `gerador_imagens.py`: Converte os FENs extraídos em imagens de tabuleiro.
-  - `construtor_dataset.py`: Constrói o dataset recortando e categorizando as imagens.
-  - `fatiador_tabuleiro.py`: Utilitário para fatiar um tabuleiro real em casas individuais.
-  - `treinador_modelo.py`: Define e treina a rede neural CNN.
-  - `reconhecedor.py`: Utiliza o modelo treinado para reconhecer peças em novas posições.
+  - `01_extrator_fen.py`: Extrai FENs a partir de partidas em formato PGN.
+  - `utils_gerador_imagens.py`: Converte os FENs extraídos em imagens de tabuleiro.
+  - `02_construtor_dataset.py`: Constrói o dataset recortando e categorizando as imagens.
+  - `utils_fatiador_tabuleiro.py`: Utilitário para fatiar um tabuleiro real em casas individuais.
+  - `03_treinador_modelo.py`: Define e treina a rede neural CNN.
+  - `04_reconhecedor.py`: Utiliza o modelo treinado para reconhecer peças em novas posições.
 - **notebooks/**: Contém os Jupyter Notebooks utilizados para exploração e análise (ex: `ufabc-memosyne.ipynb`).
 - **data/**: Contém os arquivos de dados (como `.pgn`, `.txt`, `.jpg`) e os datasets gerados (`dataset_final`).
 
@@ -28,17 +28,17 @@ Os scripts devem ser executados, preferencialmente, a partir do diretório raiz 
 
 1. Extração de FENs:
    ```bash
-   python src/extrator_fen.py
+   python src/01_extrator_fen.py
    ```
 2. Geração das Imagens e do Dataset:
    ```bash
-   python src/construtor_dataset.py
+   python src/02_construtor_dataset.py
    ```
 3. Treinamento do Modelo:
    ```bash
-   python src/treinador_modelo.py
+   python src/03_treinador_modelo.py
    ```
 4. Reconhecimento a partir de uma nova imagem:
    ```bash
-   python src/reconhecedor.py
+   python src/04_reconhecedor.py
    ```
