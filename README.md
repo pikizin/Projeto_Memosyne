@@ -2,6 +2,9 @@
 
 Este projeto tem como objetivo realizar o reconhecimento de posições de xadrez em imagens utilizando redes neurais convolucionais (CNNs). Ele processa dados de FENs, gera imagens de tabuleiros, fatia as casas e treina um modelo de deep learning capaz de classificar as peças.
 
+## Documentação Teórica (Machine Learning e Visão Computacional)
+Para entender os conceitos teóricos envolvidos no treinamento deste modelo de Inteligência Artificial (o que são Epochs, Loss, Pesos, CNN, etc), leia a nossa **[Documentação Teórica Completa](file:///d:/ufabc-memosyne/DOCUMENTACAO_TEORICA.md)**.
+
 ## Estrutura do Repositório
 
 - **src/**: Contém todos os scripts Python responsáveis pelo pipeline do projeto.
