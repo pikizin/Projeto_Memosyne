@@ -47,3 +47,33 @@ No final de cada **Epoch**, testamos a IA com essas imagens escondidas que ela n
 
 **Por que isso é essencial?**
 Para evitar o **Overfitting** (Decoreba). Se a `accuracy` normal estiver em 99% (a IA acerta tudo do grupo de treino), mas a `val_accuracy` travar em 60%, significa que a IA apenas *decorou* as imagens específicas de treino, mas não aprendeu realmente como é uma peça de xadrez genérica. Ela está falhando nas imagens novas. O que realmente importa para nós é o `val_accuracy`.
+
+---
+
+## 4. A Importância do Dataset (Conjunto de Dados)
+O cérebro da nossa Inteligência Artificial é tão bom quanto os dados que ele consome. Em Machine Learning, existe a premissa *"Garbage in, Garbage out"* (Lixo entra, lixo sai). 
+
+Se você treinar a rede neural apenas com imagens de tabuleiros azuis, ela não vai conseguir reconhecer peças em um tabuleiro de madeira. Para que o Memosyne seja robusto, precisamos de um Dataset **vasto e variado**: peças clássicas, tabuleiros 2D de diferentes sites (Chess.com, Lichess), diferentes iluminações e até fotos de tabuleiros físicos 3D.
+
+**Onde conseguir bases completas?**
+Para evoluir este projeto, recomendamos buscar bases públicas maiores. Você pode encontrar excelentes conjuntos de imagens e PGNs (histórico de partidas) nestes locais:
+- **Kaggle**: Procure por *"Chess Positions Dataset"* ou *"Chess Pieces Image Dataset"*.
+- **Lichess Database**: O Lichess disponibiliza milhões de partidas reais mensalmente em formato `.pgn` que podem ser usadas para gerar as mais variadas posições no nosso `gerador_imagens.py`.
+- **Roboflow**: Plataforma focada em Visão Computacional com diversos datasets abertos de xadrez já anotados.
+
+---
+
+## 5. Evolução Futura: YOLO e o DGT Virtual
+A arquitetura de rede neural CNN que usamos atualmente (recortando casa por casa e classificando) é excelente para imagens estáticas em 2D, mas pode ser lenta e inflexível para ambientes do mundo real.
+
+**O próximo passo do projeto Memosyne** é adotar a arquitetura **YOLO** *(You Only Look Once)*. O YOLO revolucionou a Visão Computacional pois ele não olha pedaço por pedaço da imagem; ele olha a imagem inteira de uma só vez e consegue desenhar "caixas" ao redor das peças instantaneamente, reconhecendo e rastreando múltiplos objetos em tempo real.
+
+**O Objetivo Final: Um Tabuleiro DGT Virtual no Celular**
+Tabuleiros DGT (*Digital Game Technology*) são tabuleiros físicos caríssimos com sensores embutidos que transmitem as jogadas instantaneamente para o computador. 
+
+Com o uso do YOLO rodando diretamente na câmera de um celular ou webcam posicionada sobre um tabuleiro comum, a nossa IA poderá:
+1. Rastrear as mãos dos jogadores e as peças no tabuleiro **em tempo real e em 30+ frames por segundo**.
+2. Identificar exatamente de onde uma peça saiu e para onde ela foi.
+3. Transmitir o lance automaticamente para uma interface digital (gerando o PGN em tempo real).
+
+Dessa forma, qualquer tabuleiro simples de madeira ou plástico ganha as capacidades de um tabuleiro oficial DGT utilizando apenas a câmera de um smartphone!
