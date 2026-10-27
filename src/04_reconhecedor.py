@@ -1,95 +1,81 @@
+"""Inferência de peças de xadrez a partir de imagens de casas (64x64).
+
+Exemplos:
+  python src/04_reconhecedor.py --input data/casas_separadas_padronizadas
+  python src/04_reconhecedor.py --input data/casas_separadas_padronizadas/casa_a8.png
+"""
+import argparse
+from pathlib import Path
+
+import numpy as np
 import tensorflow as tf
-import tensorflow.keras as keras
-import os
 
-# --- 1. PARÂMETROS DE CONFIGURAÇÃO ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATASET_DIR = os.path.join(BASE_DIR, "data", "dataset_final")
+BASE_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_MODEL = BASE_DIR / "meu_modelo_de_xadrez_v2.keras"
+DEFAULT_INPUT = BASE_DIR / "data" / "casas_separadas_padronizadas"
+DATASET_DIR = BASE_DIR / "data" / "dataset_final"
 IMG_SIZE = (64, 64)
-BATCH_SIZE = 329
-EPOCHS = 20  # Aumentei um pouco as épocas para dar mais tempo ao modelo maior
 
-# --- 2. CARREGAR E PREPARAR OS DADOS ---
-print("Carregando e preparando o dataset...")
+def predict_image(model, path: Path, classes):
+    img = tf.keras.utils.load_img(path, target_size=IMG_SIZE, color_mode="rgb")
+    batch = np.expand_dims(tf.keras.utils.img_to_array(img), axis=0)
+    probabilities = model.predict(batch, verbose=0)[0]
+    if len(probabilities) != len(classes):
+        raise ValueError("Número de classes do modelo difere do dataset; use o mesmo dataset do treinamento.")
+    idx = int(np.argmax(probabilities))
+    return classes[idx], float(probabilities[idx])
 
-train_ds = keras.utils.image_dataset_from_directory(
-    DATASET_DIR,
-    validation_split=0.2,
-    subset="training",
-    seed=123,
-    image_size=IMG_SIZE,
-    batch_size=BATCH_SIZE
-    # Removido label_mode para usar o padrão int
-)
+def main():
+    parser = argparse.ArgumentParser(description="Classificar peças em imagens de casas de xadrez")
+    parser.add_argument("--input", type=Path, default=DEFAULT_INPUT, help="Imagem ou pasta com imagens de casas")
+    parser.add_argument("--model", type=Path, default=DEFAULT_MODEL, help="Arquivo .keras treinado")
+    args = parser.parse_args()
 
-val_ds = keras.utils.image_dataset_from_directory(
-    DATASET_DIR,
-    validation_split=0.2,
-    subset="validation",
-    seed=123,
-    image_size=IMG_SIZE,
-    batch_size=BATCH_SIZE
-)
+    if not args.model.is_file():
+        parser.error(f"Modelo não encontrado: {args.model}. Execute antes src/03_treinador_modelo.py")
+    if not DATASET_DIR.is_dir():
+        parser.error(f"Dataset não encontrado: {DATASET_DIR} (necessário para identificar as classes).")
+    classes = sorted(p.name for p in DATASET_DIR.iterdir() if p.is_dir())
+    if not classes:
+        parser.error("Não existem pastas de classes no dataset.")
 
-class_names = train_ds.class_names
-assert class_names is not None
-num_classes = len(class_names)
-print(f"Encontradas {num_classes} classes: {class_names}")
+    model = tf.keras.models.load_model(args.model)
+    if args.input.is_file():
+        files = [args.input]
+    elif args.input.is_dir():
+        files = sorted(p for p in args.input.iterdir() if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"})
+    else:
+        parser.error(f"Entrada não encontrada: {args.input}")
+    if not files:
+        parser.error("Nenhuma imagem encontrada.")
 
-AUTOTUNE = tf.data.AUTOTUNE
-train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
-val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+    predictions = {}
+    for path in files:
+        label, confidence = predict_image(model, path, classes)
+        print(f"{path.name}: {label} ({confidence:.1%})")
+        predictions[path.stem.lower()] = label
 
-# --- 3. CONSTRUIR A ARQUITETURA DA REDE NEURAL (CNN) ---
-print("Construindo o modelo da CNN (versão aprimorada)...")
+    # Constrói FEN somente se existirem exatamente as 64 casas nomeadas casa_a8 ... casa_h1.
+    expected = {f"casa_{chr(97 + col)}{row}" for row in range(1, 9) for col in range(8)}
+    mapping = {"wP": "P", "wN": "N", "wB": "B", "wR": "R", "wQ": "Q", "wK": "K",
+               "bP": "p", "bN": "n", "bB": "b", "bR": "r", "bQ": "q", "bK": "k", "empty": None}
+    if set(predictions) == expected and all(c in mapping for c in predictions.values()):
+        ranks = []
+        for row in range(8, 0, -1):
+            rank, empties = "", 0
+            for col in range(8):
+                symbol = mapping[predictions[f"casa_{chr(97 + col)}{row}"]]
+                if symbol is None:
+                    empties += 1
+                else:
+                    if empties:
+                        rank += str(empties)
+                        empties = 0
+                    rank += symbol
+            if empties:
+                rank += str(empties)
+            ranks.append(rank)
+        print("FEN (apenas posicionamento):", "/".join(ranks))
 
-data_augmentation = keras.Sequential(
-    [
-        keras.layers.RandomFlip("horizontal"),
-        keras.layers.RandomRotation(0.1),
-        keras.layers.RandomZoom(0.1),
-        keras.layers.RandomContrast(0.1),  # Ajuda na confusão de cores
-        keras.layers.RandomBrightness(0.1)  # Ajuda com variações de iluminação
-    ],
-    name="data_augmentation",
-)
-
-model = keras.Sequential([
-    data_augmentation,
-    keras.layers.Rescaling(1./255),
-    keras.layers.Conv2D(16, 3, padding='same', activation='relu'),
-    keras.layers.MaxPooling2D(),
-    keras.layers.Conv2D(32, 3, padding='same', activation='relu'),
-    keras.layers.MaxPooling2D(),
-    keras.layers.Conv2D(64, 3, padding='same', activation='relu'),
-    keras.layers.MaxPooling2D(),
-    keras.layers.Dropout(0.20),
-    keras.layers.Flatten(),
-    keras.layers.Dense(128, activation='relu'),
-    keras.layers.Dense(num_classes, activation='softmax')
-])
-
-# --- 4. COMPILAR O MODELO ---
-model.compile(
-    optimizer='adam',
-    loss='sparse_categorical_crossentropy',  # Ajustado para labels inteiros
-    metrics=['accuracy']
-)
-
-model.summary()
-
-# --- 5. TREINAR O MODELO ---
-print("\nIniciando o treinamento do modelo APRIMORADO...")
-print(f"O treinamento ocorrerá por {EPOCHS} épocas.")
-
-history = model.fit(
-    train_ds,
-    validation_data=val_ds,
-    epochs=EPOCHS
-)
-
-print("\nTreinamento concluído!")
-
-# --- 6. SALVAR O MODELO TREINADO ---
-model.save('meu_modelo_de_xadrez_v2.keras')
-print("\nModelo aprimorado salvo com sucesso como 'meu_modelo_de_xadrez_v2.keras'")
+if __name__ == "__main__":
+    main()
